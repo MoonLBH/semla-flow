@@ -39,15 +39,22 @@ Once you have created and activated the environment successfully, you can run th
 
 ### Scripts
 
-We provide 4 scripts in the repository:
+We provide 5 scripts in the repository:
 * `preprocess` - Used for preprocessing larger datasets into the internal representation used by the model for training
 * `train` - Trains a SemlaFlow model on preprocessed data
 * `evaluate` - Evaluates a trained model and prints the results
 * `predict` - Runs the sampling for a trained model and saves the generated molecules
+* `rl_finetune` - Fine-tunes a trained SemlaFlow model with reward-weighted loss (QED reward)
 
 Each script can be run as follows (where `<script>` is replaced by the script name above without `.py`): `python -m semlaflow.<script> --data_path <path/to/data> <other_args>`
 
 See the bottom of each script for a full list of the arguments available. Default paramaters for those arguments are also given as global declarations at the top of each file. The default arguments in the training script are for GEOM Drugs. To train on QM9 we use a `bond_loss_weight` of 0.5, 2000 `warm_up_steps` and usually 300 `epochs`.
+
+To run QED-based RL fine-tuning:
+
+```
+python -m semlaflow.rl_finetune --ckpt_path path/to/model.ckpt --data_path path/to/data/qm9/smol
+```
 
 ### Models
 

@@ -734,7 +734,7 @@ class MolecularCFM(L.LightningModule):
     def _compile_model(self, model):
         return torch.compile(model, dynamic=False, fullgraph=True, mode="reduce-overhead")
 
-    def _loss(self, data, interpolated, predicted):
+    def loss_per_sample(self, data, interpolated, predicted):
         pred_coords = predicted["coords"]
         coords = data["coords"]
         mask = data["mask"].unsqueeze(2)
@@ -746,17 +746,22 @@ class MolecularCFM(L.LightningModule):
         bond_loss = self._bond_loss(data, interpolated, predicted)
         charge_loss = self._charge_loss(data, predicted)
 
-        coord_loss = coord_loss.mean()
-        type_loss = type_loss.mean() * self.type_loss_weight
-        bond_loss = bond_loss.mean() * self.bond_loss_weight
-        charge_loss = charge_loss.mean() * self.charge_loss_weight
+        weighted_type_loss = type_loss * self.type_loss_weight
+        weighted_bond_loss = bond_loss * self.bond_loss_weight
+        weighted_charge_loss = charge_loss * self.charge_loss_weight
 
-        losses = {
+        total_loss = coord_loss + weighted_type_loss + weighted_bond_loss + weighted_charge_loss
+        components = {
             "coord-loss": coord_loss,
-            "type-loss": type_loss,
-            "bond-loss": bond_loss,
-            "charge-loss": charge_loss
+            "type-loss": weighted_type_loss,
+            "bond-loss": weighted_bond_loss,
+            "charge-loss": weighted_charge_loss,
         }
+        return total_loss, components
+
+    def _loss(self, data, interpolated, predicted):
+        total_loss, components = self.loss_per_sample(data, interpolated, predicted)
+        losses = {name: value.mean() for name, value in components.items()}
         return losses
 
     def _distill_loss(self, data, predicted, eps=1e-3):
