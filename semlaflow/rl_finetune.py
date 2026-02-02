@@ -230,6 +230,10 @@ def batch_to_dict(smol_batch: GeometricMolBatch) -> dict[str, torch.Tensor]:
 
     if charges is not None:
         n_charges = len(smolRD.CHARGE_IDX_MAP.keys())
+        if charges.min() < 0 or charges.max() >= n_charges:
+            charges_list = charges.flatten().tolist()
+            mapped = [smolRD.CHARGE_IDX_MAP[charge] for charge in charges_list]
+            charges = torch.tensor(mapped, device=charges.device).view_as(charges)
         charges = smolF.one_hot_encode_tensor(charges, n_charges)
 
     return {"coords": coords, "atomics": atomics, "bonds": bonds, "charges": charges, "mask": mask}
